@@ -1,0 +1,360 @@
+---
+title: "Bollywood"
+author: "Atanu"
+date: "15/01/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+gc()
+```
+
+
+
+# **Bollywood Dataset Analysis Assignment**
+
+#### This Assignment is based on basic Analysis of Bollywood Dataset. We tried our best to explore the dataset. 
+
+#### **I am using R packages to load, analyse and visualize:**
+
+#### 1. dplyr
+#### 2. ggplot2
+#### 3. treemapify
+#### 4. janitor   
+#### 5. viridis
+#### 6. hrbrthemes
+#### 7. scales
+#### 8. heatmaply
+
+#### **Sequence of Analysis is as follows:**
+
+#### 1. Loading dataset and packages
+#### 2. Dataset Exploration
+#### 3. Dataset cleaning
+#### 4. Dataset Visualisation
+#### 5. Conclusion 
+
+# Datset and packages loading
+
+```{r}
+library(janitor)
+library(treemapify)
+library(ggplot2)
+library(viridis)
+library(hrbrthemes)
+library(scales)
+library(heatmaply)
+```
+
+```{r}
+df <- read.csv("bollywood.csv", stringsAsFactors = TRUE, na.strings = c("",NA))
+
+# Changing Release.Date column to Date data type for further analysis and visualization
+df$Release.Date <- as.Date(df$Release.Date, "%d-%b-%y")
+```
+
+
+# Dataset Exploration
+
+```{r}
+str(df)
+```
+
+
+```{r}
+colSums(is.na(df))
+```
+
+
+```{r}
+dim(df)
+```
+
+
+# Dataset Cleaning
+
+```{r}
+df1 <- clean_names(df)
+```
+
+
+```{r}
+# changing column name
+names(df1)[7] <- "bo_collec"
+```
+
+#### Creating YEAR, MONTH and WEEKDAY column 
+
+```{r}
+df1$year <- as.factor(format(df1$release_date, "%Y"))
+df1$month <- as.factor(months(as.Date(df1$release_date)))
+df1$day <- as.factor(weekdays(as.Date(df1$release_date)))
+```
+
+
+```{r}
+# changing genre to character datatype
+df1$genre <- as.character(df1$genre)
+```
+
+```{r}
+# cleaning genre column
+df1$genre[df1$genre == "Action "] <- "Action"
+df1$genre[df1$genre == " Drama "] <- "Drama"
+df1$genre[df1$genre == "Thriller "] <- "Thriller"
+```
+
+
+```{r}
+# changing back to factor data type
+df1$genre <- as.factor(df1$genre)
+```
+
+
+# Visualisations
+
+## **Treemap**
+
+```{r}
+tree1 = as.data.frame(table(df1$month))
+# Basic Treemap
+
+t1 <- ggplot(tree1, aes(area=Freq, fill=Freq, label=paste(Var1,   Freq, sep = "\n"))) +
+      geom_treemap() + 
+      geom_treemap_text(colour = "white",
+      place = "centre",size = 15) +
+      scale_fill_gradient(high = "#132B43",low = "#56B1F7") +
+      ggtitle("Month-Wise Movies Released") +
+      theme_ft_rc()+
+      theme(legend.position = "none") + 
+      theme(plot.title = element_text(size=14, face="bold", hjust=0.5))
+t1
+```
+
+#### Using the above treemap we can easily deduce that January months had the most movie releases. In overall first half of the year had the more movie releases than 2nd half of the year.
+
+#### Chart design details:
+1. Used treemap from ggplot2. 
+2. Used a theme from hrbrthemes package. 
+3. Used Scale function to scale the color from dark blue to light blue.
+
+## **Bar Chart**
+
+```{r}
+bar1 <- ggplot(df1 , aes(x=day, fill=day)) + 
+        geom_bar() + 
+        stat_count(geom = "text", colour = "white", size = 10,
+        aes(label = ..count..),position=position_stack(vjust=0.5)) +
+        theme_ft_rc()+
+        theme(legend.position = "none") +
+        ggtitle("Day-Wise Movies Released") +
+        theme(plot.title = element_text(size=14, face="bold", hjust = 0.5))
+  
+bar1
+```
+
+#### In this above bar chart we can see that Friday was the most number of releases than any other day. We can say that maybe bollywood film makers like to releases movies on Fridays.
+
+#### Chart design details:
+1. Used bar plot from ggplot2. 
+2. Used a theme from hrbrthemes package. 
+3. Used stat_count function to display numbers on each bars.
+
+
+## **Bubble Chart 1**
+
+```{r}
+bubble1 = ggplot(df1, aes(x=budget, y=bo_collec, size=genre, color = genre)) +
+          geom_point(alpha=0.5) +
+          scale_fill_viridis(discrete=TRUE, guide=FALSE, option="A") +
+          theme_ft_rc() +
+          theme(legend.position="bottom") +
+          ylab("Box Office Collection  Million Rupees") +
+          xlab("Budget  Million Rupees") +
+          ggtitle("Bubble Chart Box office collection VS Budget") +
+          theme(plot.title = element_text(size=14, face="bold", hjust = 0.5))
+bubble1
+```
+
+#### From the above bubble chart we can say that:
+1. Action had the most Budget but not that good box office collection 
+2. Drama had relatively low budget in with respect Action movies but had the highest Box office collection.
+3. Rest we can say that budget and box office collection have positive correlation.
+
+#### Chart design details:
+1. Used scatter plot from ggplot2. 
+2. Used a theme from hrbrthemes package. 
+3. Used scale function for scaling the color in the bubble.
+
+
+## **Bubble Chart 2**
+
+```{r}
+bubble2 <- ggplot(df1, aes(x=youtube_views, y=youtube_likes, size=genre, color = genre)) +
+           geom_point(alpha=0.5) +
+           scale_fill_viridis(discrete=TRUE, guide=FALSE, option="A") +
+           theme_ft_rc() +
+           theme(legend.position="bottom") +
+           ylab("Youtube Likes") +
+           xlab("Youtube Views") +
+           ggtitle("Youtube Views VS Youtube Likes") +
+           theme(plot.title = element_text(size=14, face="bold", hjust = 0.5))+ 
+           scale_x_continuous(labels = unit_format(unit = "M", scale = 1e-6))
+bubble2
+```
+
+#### From the above bubble chart we can say that:
+1. Here we can clearly see that views and likes are positively correlated.
+2. In some Action and Drama movies had the most likes and views.
+
+#### Chart design details:
+1. Used scatter plot from ggplot2. 
+2. Used a theme from hrbrthemes package. 
+3. Used scale function for scaling the color in the bubble.
+
+## **Histogram**
+
+```{r}
+hist1 <- ggplot(df1, aes(x=release_date, color=genre, fill=genre)) + 
+         geom_histogram(binwidth = 20, position="identity", alpha=0.7) +
+         theme_ft_rc() +
+         theme(legend.position="bottom") +
+         ylab("No of Movies Released") +
+         xlab("Dates") +
+         ggtitle("Movies Released Over Time") +
+         theme(plot.title = element_text(size=14, face="bold", hjust = 0.5)) 
+hist1
+```
+
+#### From above histogram the notable highlights is that no. of Drama movies was released around May 2014 maximum times over the  recorded period from 2013 to 2015. 
+#### Around Dec 2013 no movies was released.
+
+#### Chart design details:
+1. Used histogram from ggplot2. 
+2. Used a theme from hrbrthemes package. 
+
+## **Boxplot Chart**
+
+```{r}
+bp1<- ggplot(df1, aes(x=genre, y=budget, fill=genre)) + 
+      geom_boxplot(notch=TRUE) +
+      geom_dotplot(binaxis='y', stackdir='center', dotsize=0.8) +
+      theme_ft_rc() +
+      theme(legend.position="none") +
+      ylab("Budget in Million Rupees") +
+      xlab("Genre") +
+      ggtitle("Budget Based On Genre") +
+      theme(plot.title = element_text(size=14, face="bold", hjust = 0.5)) 
+
+bp1
+```
+
+#### From the above Boxplot chart we can say that:
+1. Action movies had the highest budgets.
+2. Comedy movies had the lowest budgets.
+3. Thriller movies was the most tightly budget of all.
+
+#### Chart design details:
+1. Used boxplot and dotplot from ggplot2. 
+2. Used a theme from hrbrthemes package.
+3. Used dotplot to visualised the dots on the box plot.
+
+## Creating new data frame for correlation chart
+
+```{r}
+df2 <- df1[,c(6,7,8,9,10)]
+```
+
+
+## **Correlation Chart**
+
+```{r}
+gg_back_box <- theme(
+  panel.background = element_rect(fill = "grey"),
+  plot.background = element_rect(fill = "grey"),
+  legend.background = element_rect(fill = "grey")
+)
+hm1 <- heatmaply_cor(x = cor(df2), 
+              main = "Movie Attributes Correlation Matrix",
+              k_row = 2,
+              k_col = 2,
+              heatmap_layers = gg_back_box
+              )
+hm1
+```
+
+#### Created a dendogram based correlation matrix 
+1. highlights two clusters consisting of similar budget, earnings, likes, views and dislikes.
+2. all the movies are positively correlated to each other
+3. views, likes and dislikes had the most positive correlation.
+
+#### Chart design details:
+1. Used heatmaply to visualize
+2. Used theme function to customize the chart
+
+## Creating new data frame for pie chart
+
+```{r}
+
+df3 <- as.data.frame(table(df1$genre))
+df3 <- df3 %>% 
+  mutate( Freq_total = sum(Freq),
+  Freq_percent = percent(Freq/Freq_total))
+df3
+```
+
+
+## **Donut Chart**
+
+```{r}
+hsize <- 2
+df3 <- df3 %>%
+  mutate(x=hsize)
+
+dn1 <- ggplot(df3, aes(x = hsize, y = Freq, fill = Var1)) +
+       geom_col(color = "black") +
+       geom_text(aes(label = Freq_percent, color="red"), 
+       position = position_stack(vjust = 0.5), size=7) +
+       coord_polar(theta = "y") +
+       scale_fill_brewer(palette = "GnBu") +
+       xlim(c(0.2, hsize + 0.5)) +
+       theme(panel.background = element_rect(fill = "white"),
+       panel.grid = element_blank(),
+       axis.title = element_blank(),
+       axis.ticks = element_blank(),
+       axis.text = element_blank()) +
+       ggtitle("Genre Distribution") +
+       theme(plot.title = element_text(size=14, face="bold", hjust = 0.5))
+dn1
+```
+
+#### From above donut chart we can say that:
+1. Comedy was the most released in the period from 2013 to 2015 precisely 36.
+2. Action was the least released in that period precisely 24.
+3. We can also notice that the difference between the movie released over that period is not significantly different, but we have to do hypothesis test to confirm it.
+
+#### Chart design details:
+1. Used col chart in ggplot to visualise donut chart
+2. Used a theme from hrbrthemes package.
+3. Used scale function to fill the color in the chart
+
+
+## **Conclusion**
+
+1. Indian movie makers dose not discriminate while releasing diverse genre of movies but need to do hypothesis to test the theory
+2. Action movies has the most budgets which is understandable due to the cost of various action scenes which has to be shot in various places to make it appealing.
+3. Surprisingly according to the dataset in Dec 2013 no Bollywood movies was released but I did some digging and found out that only 4 movies were released in that month and these movies were not included in the dataset.
+[List of Bollywood films of 2013 wiki](https://en.wikipedia.org/wiki/List_of_Bollywood_films_of_2013)
+4. We can say that this dataset does not has comprehensive list of movies of bollywood moves from 2013-2015.
+5. Likes VS Views and Budget Vs Box office collection had positively correlation.
+6. Clearly Friday is very popular among Indian film makers to release movies on that day.
+
